@@ -1,0 +1,56 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/declarative-agent/v1.8/schema.json",
+  "version": "v1.8",
+  "name": "VAJA Transcript Analyst",
+  "description": "ตรวจทานและวิเคราะห์ transcript ภาษาไทยจาก VAJA AI สำหรับงานบริการลูกค้าการไฟฟ้า: แก้คำผิดจาก ASR โดยไม่เปลี่ยนความหมาย สรุปบทสนทนา วิเคราะห์ sentiment ของลูกค้าแยกจากเจ้าหน้าที่ และจัดหมวดหัวข้อ (ไฟดับ บิล มิเตอร์ คำขอบริการ ร้องเรียน สอบถามทั่วไป) ส่งผลเป็น JSON และบันทึกกลับ VAJA AI เมื่อผู้ใช้ยืนยัน",
+  "instructions": "$[file('instruction.txt')]",
+  "conversation_starters": [
+    {
+      "title": "วิเคราะห์ครบทุกด้าน",
+      "text": "ดึง transcript งาน <job_id> จาก VAJA AI แล้ววิเคราะห์ครบ 4 ด้าน: ตรวจทานข้อความ สรุป sentiment และหัวข้อ"
+    },
+    {
+      "title": "ตรวจทานคำผิด",
+      "text": "ตรวจทานคำผิดใน transcript งาน <job_id> แสดงเฉพาะ segment ที่แก้ พร้อมเหตุผลและความมั่นใจ"
+    },
+    {
+      "title": "สรุปสายสนทนา",
+      "text": "สรุปสาเหตุที่ลูกค้าติดต่อ สิ่งที่เจ้าหน้าที่ดำเนินการ สถานะการแก้ไข และเรื่องที่ต้องติดตาม ของงาน <job_id>"
+    },
+    {
+      "title": "Sentiment ลูกค้า",
+      "text": "วิเคราะห์ sentiment ของลูกค้าแยกจากเจ้าหน้าที่ในงาน <job_id> พร้อมยกข้อความประกอบ"
+    },
+    {
+      "title": "จัดหมวดหัวข้อ",
+      "text": "จัดหมวดหัวข้อของบทสนทนางาน <job_id> (ไฟดับ บิล มิเตอร์ คำขอบริการ ร้องเรียน สอบถามทั่วไป) ระบุหัวข้อหลัก"
+    },
+    {
+      "title": "JSON + บันทึกผล",
+      "text": "วิเคราะห์งาน <job_id> ส่งผลเป็น JSON ตาม schema ของ VAJA AI แล้วถามฉันก่อนบันทึกกลับ VAJA AI"
+    },
+    {
+      "title": "ดูผลที่บันทึกไว้",
+      "text": "แสดงผลวิเคราะห์ล่าสุดที่บันทึกไว้ใน VAJA AI ของงาน <job_id>"
+    },
+    {
+      "title": "วิเคราะห์ข้อความที่วาง",
+      "text": "วิเคราะห์ transcript ที่ฉันจะวางต่อไปนี้ (ไม่ต้องดึงจาก VAJA AI):"
+    }
+  ],
+  "actions": [
+    {
+      "id": "vajaAiApi",
+      "file": "ai-plugin.json"
+    }
+  ],
+  "behavior_overrides": {
+    "special_instructions": {
+      "discourage_model_knowledge": false
+    },
+    "default_response_mode": "Think deeper"
+  },
+  "disclaimer": {
+    "text": "ผลวิเคราะห์สร้างโดย AI จาก transcript ของ ASR อาจมีข้อผิดพลาด ต้องตรวจทานก่อนใช้งาน ใช้กับข้อมูลลูกค้าจริงได้เฉพาะเมื่อได้รับอนุมัติตามนโยบายคุ้มครองข้อมูลส่วนบุคคลขององค์กร"
+  }
+}

@@ -1,0 +1,37 @@
+x-common: &common
+  build: .
+  env_file:
+    - path: .env
+      required: false
+  volumes:
+    - asr-data:/app/data
+  environment:
+    DATA_DIR: /app/data
+    MODEL_CACHE_DIR: /app/data/models
+  init: true
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  cap_drop: [ALL]
+  pids_limit: 128
+  mem_limit: 4g
+  cpus: 4
+  tmpfs:
+    - /tmp:size=128m,mode=1777
+services:
+  api:
+    <<: *common
+    ports:
+      - "127.0.0.1:8000:8000"
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8000),3); s.close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  worker:
+    <<: *common
+    command: python -m worker.main
+    stop_grace_period: 30s
+volumes:
+  asr-data:

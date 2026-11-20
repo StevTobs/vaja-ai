@@ -1,0 +1,31 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+data/
+
+dist/
+build/
+*.egg-info/
+
+# M365 Copilot agent package
+integrations/m365-copilot/env/.env.dev
+integrations/m365-copilot/build/
+
+# One-click installer downloads
+tools/
+
+# Personal notes / secrets
+note.txt
+*.token

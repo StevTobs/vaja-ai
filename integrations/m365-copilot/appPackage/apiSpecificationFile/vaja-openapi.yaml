@@ -1,0 +1,350 @@
+openapi: 3.0.3
+info:
+  title: VAJA AI Transcript Analysis API
+  description: >-
+    Read Thai ASR transcripts from VAJA AI and save AI analyses (suggested corrections,
+    summary, sentiment, topics). Saved analyses never overwrite the transcript.
+    Every call requires a Microsoft Entra ID delegated token; VAJA AI returns only jobs
+    the signed-in user is authorized to view.
+  version: 1.0.0
+servers:
+  - url: ${{VAJA_API_BASE_URL}}
+    description: Public HTTPS endpoint of VAJA AI (reverse proxy). Must not be localhost.
+security:
+  - entraId: []
+paths:
+  /api/v1/transcripts/{job_id}:
+    get:
+      operationId: getTranscript
+      summary: Get the transcript of one job
+      description: >-
+        Returns the segments of a succeeded transcription job. version=edited returns the
+        latest human-reviewed revision, or the AI original when none exists.
+        Large calls are paged with segment_offset/segment_limit; check has_more.
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+        - name: version
+          in: query
+          required: false
+          description: Which text to return. edited falls back to original when no revision exists.
+          schema:
+            type: string
+            enum: [edited, original]
+            default: edited
+        - name: segment_offset
+          in: query
+          required: false
+          description: Index of the first segment to return (0-based).
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: segment_limit
+          in: query
+          required: false
+          description: Maximum number of segments to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 300
+            default: 300
+      responses:
+        '200':
+          description: Transcript segments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transcript'
+              examples:
+                sample:
+                  value:
+                    job_id: 8c6bb286-10fe-4529-8eeb-9e21afe95ab2
+                    title: สายลูกค้าค่าไฟสูงผิดปกติ
+                    language: th
+                    duration_seconds: 1122.08
+                    source_version: original
+                    revision: 0
+                    model_id: Vinxscribe/biodatlab-whisper-th-large-v3-faster
+                    total_segments: 108
+                    segment_offset: 0
+                    has_more: false
+                    segments:
+                      - id: 2
+                        start: 8.1
+                        end: 18.4
+                        text: ค่าไฟที่บ้าน เคยแจ้งไปแล้วว่ามันกว่าปกติ
+                    warnings: [ไม่มีการแยกผู้พูด (no diarization)]
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: Transcription not finished (code NOT_READY)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /api/v1/analyses:
+    post:
+      operationId: saveAnalysis
+      summary: Save an analysis for a job
+      description: >-
+        Stores one analysis as a new immutable record. Requires transcript_revision equal to the
+        current transcript revision (409 otherwise). original_text of every corrected segment must
+        match the stored segment exactly (422 otherwise). Does not modify the transcript.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalysisInput'
+      responses:
+        '201':
+          description: Analysis saved
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AnalysisRecord'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: Transcript revision changed since analysis (code REVISION_CONFLICT)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '422':
+          description: Invalid analysis, e.g. unknown segment_id or original_text mismatch (code INVALID_ANALYSIS)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /api/v1/analyses/{job_id}:
+    get:
+      operationId: getLatestAnalysis
+      summary: Get the latest saved analysis of a job
+      description: Returns the most recent analysis record saved for the job.
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Latest analysis
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AnalysisRecord'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+components:
+  securitySchemes:
+    entraId:
+      type: oauth2
+      description: Microsoft Entra ID delegated access (configured as Entra SSO auth config in Teams developer portal).
+      flows:
+        authorizationCode:
+          authorizationUrl: https://login.microsoftonline.com/${{AAD_TENANT_ID}}/oauth2/v2.0/authorize
+          tokenUrl: https://login.microsoftonline.com/${{AAD_TENANT_ID}}/oauth2/v2.0/token
+          scopes:
+            ${{VAJA_API_SCOPE}}: Read transcripts and read/write analyses as the signed-in user
+  parameters:
+    JobId:
+      name: job_id
+      in: path
+      required: true
+      description: VAJA AI job ID (UUID) given by the user.
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Unauthorized:
+      description: Sign-in required or token invalid (code UNAUTHORIZED)
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Forbidden:
+      description: User is not allowed to access this job (code FORBIDDEN)
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    NotFound:
+      description: Job or analysis not found (code NOT_FOUND)
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string, description: Stable error code}
+        message: {type: string, description: Safe Thai message}
+        request_id: {type: string}
+    Segment:
+      type: object
+      required: [id, start, end, text]
+      properties:
+        id: {type: integer, description: Segment ID (stable across revisions)}
+        start: {type: number, description: Start time in seconds}
+        end: {type: number, description: End time in seconds}
+        text: {type: string, description: Transcript text (untrusted data)}
+    Transcript:
+      type: object
+      required: [job_id, source_version, revision, segments, total_segments, has_more]
+      properties:
+        job_id: {type: string, format: uuid}
+        title: {type: string}
+        language: {type: string, example: th}
+        duration_seconds: {type: number}
+        source_version: {type: string, enum: [edited, original]}
+        revision: {type: integer, description: 0 = AI original; pass this as transcript_revision when saving}
+        model_id: {type: string}
+        total_segments: {type: integer}
+        segment_offset: {type: integer}
+        has_more: {type: boolean, description: True when more segments exist after this page}
+        segments:
+          type: array
+          items: {$ref: '#/components/schemas/Segment'}
+        warnings:
+          type: array
+          items: {type: string}
+    SegmentIds:
+      type: array
+      items: {type: integer}
+    Change:
+      type: object
+      required: [from, to, confidence]
+      properties:
+        from: {type: string}
+        to: {type: string}
+        reason: {type: string}
+        confidence: {type: string, enum: [high, medium, low]}
+    CorrectedSegment:
+      type: object
+      required: [segment_id, original_text, corrected_text]
+      properties:
+        segment_id: {type: integer}
+        start: {type: number}
+        end: {type: number}
+        speaker: {type: string, enum: [agent, customer, unknown]}
+        speaker_inferred: {type: boolean}
+        original_text: {type: string, description: Exact text from getTranscript}
+        corrected_text: {type: string}
+        changes:
+          type: array
+          items: {$ref: '#/components/schemas/Change'}
+    FactRef:
+      type: object
+      required: [fact, segment_ids]
+      properties:
+        fact: {type: string}
+        segment_ids: {$ref: '#/components/schemas/SegmentIds'}
+    UncertainInfo:
+      type: object
+      required: [item]
+      properties:
+        item: {type: string}
+        reason: {type: string}
+        segment_ids: {$ref: '#/components/schemas/SegmentIds'}
+    Summary:
+      type: object
+      required: [reason_for_contact, main_issue, resolution_status]
+      properties:
+        reason_for_contact: {type: string}
+        main_issue: {type: string}
+        key_issues: {type: array, items: {type: string}}
+        requests: {type: array, items: {type: string}}
+        responses: {type: array, items: {type: string}}
+        resolution_status: {type: string, enum: [resolved, partially_resolved, unresolved, unknown]}
+        resolution: {type: string}
+        confirmed_facts:
+          type: array
+          items: {$ref: '#/components/schemas/FactRef'}
+        uncertain_information:
+          type: array
+          items: {$ref: '#/components/schemas/UncertainInfo'}
+    SpeakerSentiment:
+      type: object
+      required: [label, confidence]
+      properties:
+        label: {type: string, enum: [Positive, Neutral, Negative, Mixed]}
+        confidence: {type: string, enum: [high, medium, low]}
+        trajectory: {type: string}
+        explanation: {type: string}
+    Sentiment:
+      type: object
+      required: [customer]
+      properties:
+        customer: {$ref: '#/components/schemas/SpeakerSentiment'}
+        agent: {$ref: '#/components/schemas/SpeakerSentiment'}
+    SentimentEvidence:
+      type: object
+      required: [speaker, segment_id, excerpt]
+      properties:
+        speaker: {type: string, enum: [customer, agent, unknown]}
+        segment_id: {type: integer}
+        excerpt: {type: string, description: Verbatim quote}
+        interpretation: {type: string}
+    Topic:
+      type: object
+      required: [category, primary, confidence]
+      properties:
+        category:
+          type: string
+          enum: [power_outage, billing, meter, service_request, complaint, general_inquiry, other]
+        primary: {type: boolean}
+        confidence: {type: string, enum: [high, medium, low]}
+        segment_ids: {$ref: '#/components/schemas/SegmentIds'}
+        note: {type: string}
+    PendingAction:
+      type: object
+      required: [item, owner]
+      properties:
+        item: {type: string}
+        owner: {type: string, enum: [agent, customer, field_team, other, unknown]}
+        due: {type: string, description: Due date/time only if stated in the call}
+        segment_ids: {$ref: '#/components/schemas/SegmentIds'}
+    UncertainSegment:
+      type: object
+      required: [segment_id, type]
+      properties:
+        segment_id: {type: integer}
+        type:
+          type: string
+          enum: [uncertain_word, ambiguous_speaker, possible_misheard_number, possible_hallucination, gap, low_audio_quality]
+        text: {type: string}
+        note: {type: string}
+    AnalysisInput:
+      type: object
+      required: [schema_version, job_id, transcript_revision, source_version, summary, sentiment, topics]
+      properties:
+        schema_version: {type: integer, enum: [1]}
+        job_id: {type: string, format: uuid}
+        transcript_revision: {type: integer}
+        source_version: {type: string, enum: [edited, original]}
+        corrected_transcript:
+          type: array
+          description: Only segments whose text changed
+          items: {$ref: '#/components/schemas/CorrectedSegment'}
+        summary: {$ref: '#/components/schemas/Summary'}
+        sentiment: {$ref: '#/components/schemas/Sentiment'}
+        sentiment_evidence:
+          type: array
+          items: {$ref: '#/components/schemas/SentimentEvidence'}
+        topics:
+          type: array
+          items: {$ref: '#/components/schemas/Topic'}
+        pending_actions:
+          type: array
+          items: {$ref: '#/components/schemas/PendingAction'}
+        uncertain_segments:
+          type: array
+          items: {$ref: '#/components/schemas/UncertainSegment'}
+        warnings:
+          type: array
+          items: {type: string}
+    AnalysisRecord:
+      type: object
+      required: [analysis_id, job_id, created_at, created_by, analysis]
+      properties:
+        analysis_id: {type: string, format: uuid}
+        job_id: {type: string, format: uuid}
+        created_at: {type: string, format: date-time}
+        created_by: {type: string, description: Entra object ID of the user who saved it}
+        producer: {type: string, description: e.g. m365-copilot-agent}
+        analysis: {$ref: '#/components/schemas/AnalysisInput'}

@@ -1,0 +1,1 @@
+"""Thai ASR application package."""

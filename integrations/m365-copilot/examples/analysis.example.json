@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "job_id": "00000000-0000-4000-8000-000000000000",
+  "transcript_revision": 0,
+  "source_version": "original",
+  "corrected_transcript": [
+    {
+      "segment_id": 4,
+      "start": 27.1,
+      "end": 35.8,
+      "speaker": "customer",
+      "speaker_inferred": true,
+      "original_text": "ยังไม่สบายใจอะค่ะ ในเรื่องข้าวไฟ เดือนแรกคือไม่มีบินมา",
+      "corrected_text": "ยังไม่สบายใจอะค่ะ ในเรื่องค่าไฟ เดือนแรกคือไม่มีบิลมา",
+      "changes": [
+        {"from": "ข้าวไฟ", "to": "ค่าไฟ", "reason": "ASR homophone; บริบทเป็นค่าไฟฟ้า", "confidence": "high"},
+        {"from": "บิน", "to": "บิล", "reason": "บริบทใบแจ้งค่าไฟ", "confidence": "high"}
+      ]
+    }
+  ],
+  "summary": {
+    "reason_for_contact": "สอบถามค่าไฟที่สูงผิดปกติ",
+    "main_issue": "ลูกค้าได้รับใบแจ้งเตือนก่อนงดจ่ายไฟ ยอดสูงกว่าที่เคยใช้มาก",
+    "key_issues": ["ค่าไฟสูงกว่าบ้านเดิม", "บิลบางรอบไม่ได้รับ"],
+    "requests": ["ขอให้ตรวจสอบมิเตอร์อีกครั้ง"],
+    "responses": ["เจ้าหน้าที่ตรวจสอบยอดในระบบ", "เจ้าหน้าที่รับเรื่องส่งประสานงาน"],
+    "resolution_status": "partially_resolved",
+    "resolution": "ส่งเรื่องประสานงานให้หน่วยงานพื้นที่ตรวจสอบ",
+    "confirmed_facts": [{"fact": "ยอดในใบแจ้งเตือน 6,900 บาท", "segment_ids": [8]}],
+    "uncertain_information": [{"item": "ยอด 6,009 บาทในช่วงต้นสาย", "reason": "ขัดกับ 6,900 ที่พูดภายหลัง อาจฟังผิด", "segment_ids": [7]}]
+  },
+  "sentiment": {
+    "customer": {"label": "Negative", "confidence": "medium", "trajectory": "Negative -> Neutral หลังได้รับคำอธิบาย", "explanation": "ลูกค้ากังวลและแปลกใจกับยอดค่าไฟ"},
+    "agent": {"label": "Neutral", "confidence": "medium", "explanation": "สุภาพ ให้ข้อมูลตามระบบ"}
+  },
+  "sentiment_evidence": [
+    {"speaker": "customer", "segment_id": 8, "excerpt": "เราก็เลยแปลกใจว่า", "interpretation": "ความไม่มั่นใจในยอดค่าไฟ"}
+  ],
+  "topics": [
+    {"category": "billing", "primary": true, "confidence": "high", "segment_ids": [4, 7, 8], "note": ""},
+    {"category": "meter", "primary": false, "confidence": "medium", "segment_ids": [20], "note": "ขอตรวจมิเตอร์"},
+    {"category": "service_request", "primary": false, "confidence": "medium", "segment_ids": [95], "note": "ส่งเรื่องประสานงาน"}
+  ],
+  "pending_actions": [
+    {"item": "หน่วยงานพื้นที่ติดต่อกลับเพื่อตรวจสอบมิเตอร์", "owner": "field_team", "due": "", "segment_ids": [95]}
+  ],
+  "uncertain_segments": [
+    {"segment_id": 7, "type": "possible_misheard_number", "text": "6,009 บาท", "note": "เทียบกับ 6,900 ใน segment 8"},
+    {"segment_id": 1, "type": "ambiguous_speaker", "text": "", "note": "ไม่มี diarization ระบุผู้พูดจากเนื้อหา"}
+  ],
+  "warnings": ["ไม่มีการแยกผู้พูด (no diarization) ผู้พูดอนุมานจากเนื้อหา", "ตัวอย่างสังเคราะห์ ไม่ใช่ข้อมูลลูกค้าจริง"]
+}

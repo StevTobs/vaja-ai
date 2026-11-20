@@ -1,0 +1,35 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.19/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.19",
+  "version": "1.0.0",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "${{VAJA_PUBLISHER_NAME}}",
+    "websiteUrl": "${{VAJA_WEBSITE_URL}}",
+    "privacyUrl": "${{VAJA_PRIVACY_URL}}",
+    "termsOfUseUrl": "${{VAJA_TERMS_URL}}"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "VAJA Transcript Analyst",
+    "full": "VAJA Transcript Analyst for VAJA AI"
+  },
+  "description": {
+    "short": "ตรวจทาน สรุป และวิเคราะห์ transcript ภาษาไทยจาก VAJA AI",
+    "full": "Agent สำหรับ Microsoft 365 Copilot ที่อ่าน transcript ภาษาไทยจาก VAJA AI (ระบบถอดเสียงขององค์กร) เพื่อตรวจทานคำผิดจาก ASR สรุปบทสนทนาศูนย์บริการลูกค้า วิเคราะห์ sentiment ของลูกค้าแยกจากเจ้าหน้าที่ และจัดหมวดหัวข้อ ผลวิเคราะห์บันทึกกลับ VAJA AI ได้เมื่อผู้ใช้ยืนยัน และไม่แก้ transcript ต้นฉบับ"
+  },
+  "accentColor": "#1F5F5B",
+  "copilotAgents": {
+    "declarativeAgents": [
+      {
+        "id": "vajaTranscriptAnalyst",
+        "file": "declarativeAgent.json"
+      }
+    ]
+  },
+  "permissions": ["identity"],
+  "validDomains": ["${{VAJA_API_HOST}}"]
+}
