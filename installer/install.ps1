@@ -118,14 +118,20 @@ function Test-NvidiaGpu {
 }
 
 function New-Shortcut([string]$path, [string]$arguments, [string]$description) {
+    # WScript.Shell saves through an ANSI path, so a Thai file name becomes "???" and fails.
+    # Save under an ASCII temp name in the same folder, then rename (PowerShell handles Unicode).
+    $folder = Split-Path -Parent $path
+    $temp = Join-Path $folder ("vaja-" + [guid]::NewGuid().ToString('N') + '.lnk')
     $shell = New-Object -ComObject WScript.Shell
-    $lnk = $shell.CreateShortcut($path)
+    $lnk = $shell.CreateShortcut($temp)
     $lnk.TargetPath = $VenvPythonW
     $lnk.Arguments = $arguments
     $lnk.WorkingDirectory = $Root
     $lnk.Description = $description
     $lnk.IconLocation = "$env:SystemRoot\System32\SndVol.exe,0"
     $lnk.Save()
+    if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force }
+    Move-Item -LiteralPath $temp -Destination $path -Force
 }
 
 function Install-All([bool]$useGpu, [bool]$downloadModel, [bool]$desktopShortcut) {
