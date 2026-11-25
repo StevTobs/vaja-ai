@@ -128,7 +128,9 @@ function New-Shortcut([string]$path, [string]$arguments, [string]$description) {
     $lnk.Arguments = $arguments
     $lnk.WorkingDirectory = $Root
     $lnk.Description = $description
-    $lnk.IconLocation = "$env:SystemRoot\System32\SndVol.exe,0"
+    $icon = Join-Path $Root 'app\static\vaja.ico'
+    if (Test-Path -LiteralPath $icon) { $lnk.IconLocation = "$icon,0" }
+    else { $lnk.IconLocation = "$env:SystemRoot\System32\SndVol.exe,0" }
     $lnk.Save()
     if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force }
     Move-Item -LiteralPath $temp -Destination $path -Force
